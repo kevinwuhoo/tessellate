@@ -1,0 +1,92 @@
+<html>
+<head>
+  <title>Tessellate</title>
+  <link href='//fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
+  <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css'>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      position: relative;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 72px;
+      font-weight: 700;
+      color: #222;
+    }
+    .center-of-attention {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .this-is-it {
+      border: solid 10px #222;
+      padding: 24px;
+    }
+    .this-is-it:hover {
+      color: #fff;
+      background-color: #222;
+      border: solid 10px #fff;
+    }
+    .but-buttons-below-it {
+      margin-top: 140px;
+    }
+    a, a:hover, a:visited {
+      color: #222;
+    }
+    .stupid-adblock-fa-twitter:before {
+      content: "\f099";
+    }
+  </style>
+</head>
+<body>
+
+  <div class="center-of-attention">
+    <div class="this-is-it">TESSELLATE</div>
+  </div>
+  <div class="center-of-attention but-buttons-below-it">
+    <a href="https://github.com/kevinwuhoo/tessellate"><i class="fa fa-github"></i></a>
+    <a href="https://twitter.com/kevinwuhoo"><i class="fa stupid-adblock-fa-twitter"></i></a>
+  </div>
+
+  <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
+  <script src="//cdn.rawgit.com/kevinwuhoo/tessellate/master/tessellate.js"></script>
+  <script>
+    var intervalId = null
+    var colors = ["#b3e2cd","#fdcdac","#cbd5e8","#f4cae4","#e6f5c9","#fff2ae","#f1e2cc"]
+
+    var appendTessellatedCanvas = function() {
+      canvas = tessellate({
+        size: 60,
+        colors: colors,
+        disableRandomStart: true
+      })
+      document.body.appendChild(canvas)
+    }
+
+    $('.this-is-it').hover(
+      // mouseenter
+      function() {
+        intervalId = setInterval(function() {
+          appendTessellatedCanvas()
+          if($('canvas').length === 2)
+            $('canvas').eq(0).remove()
+        }, 50)
+
+      // mouseleave
+      }, function() {
+        clearInterval(intervalId)
+      }
+    )
+    $(document).ready(appendTessellatedCanvas)
+    $(window).resize(function() {
+      $('canvas').remove()
+      appendTessellatedCanvas()
+    })
+  </script>
+</body>
+</html>
