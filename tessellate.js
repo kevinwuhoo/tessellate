@@ -20,16 +20,16 @@
 window.tessellate = function (opts) {
   'use strict'
 
-  var triangleHeight = opts.size
+  var triangleHeight = parseInt(opts.size, 10)
   var triangleHeightHalf = triangleHeight / 2
 
-  var canvasWidth = opts.width || window.innerWidth
-  var canvasHeight = opts.height || window.innerHeight
+  var canvasWidth = opts.width || parseInt(window.innerWidth, 10)
+  var canvasHeight = opts.height || parseInt(window.innerHeight)
 
 
   var colors = null, randomColor = null
-  if(opts.randomColor) {
-    randomColor = opts.randomColor
+  if(opts.coloringFunction) {
+    randomColor = opts.coloringFunction
   } else {
     colors = opts.colors
     randomColor = function() { return colors[Math.floor(Math.random() * colors.length)] }
@@ -39,8 +39,9 @@ window.tessellate = function (opts) {
   canvas.setAttribute('width', canvasWidth)
   canvas.setAttribute('height', canvasHeight)
   var ctx = canvas.getContext('2d')
+  ctx.lineWidth = 1
 
-  var x = null, y = null
+  var x = null, y = null, initialX = null
   if(opts.randomStart) {
     x = -Math.random() * triangleHeightHalf
     y = -Math.random() * triangleHeightHalf
@@ -48,6 +49,7 @@ window.tessellate = function (opts) {
     x = 0
     y = 0
   }
+  initialX = x
 
   // track directionality of previous triangle so that next triangle is
   // drawn in opposite direction
@@ -58,19 +60,25 @@ window.tessellate = function (opts) {
 
   var rowNum = 0, triangleIndex = 0
   while (x < canvasWidth || y < canvasHeight) {
-    ctx.fillStyle = randomColor(rowNum, triangleIndex)
+    var chosenColor = randomColor(rowNum, triangleIndex)
+    ctx.beginPath()
+    ctx.fillStyle = chosenColor
+    ctx.strokeStyle = chosenColor
+
     var path = new Path2D()
     path.moveTo(x, y)
 
     if (isPrevPointingUp) {
       path.lineTo(x - triangleHeightHalf, y + triangleHeight)
       path.lineTo(x + triangleHeightHalf, y + triangleHeight)
-      ctx.fill(path)
+      path.lineTo(x, y)
     } else {
       path.lineTo(x + triangleHeight, y)
       path.lineTo(x + triangleHeightHalf, y + triangleHeight)
-      ctx.fill(path)
+      path.lineTo(x, y)
     }
+    ctx.fill(path)
+    ctx.stroke(path)
 
     if (!isPrevPointingUp) {
       x += triangleHeight
@@ -80,15 +88,15 @@ window.tessellate = function (opts) {
     // vertex is past edge of screen, its still colored
     if (x > canvasWidth + triangleHeightHalf) {
       if (isPrevRowFirstPointingUp) {
-        x = -triangleHeightHalf
+        x = (-triangleHeightHalf) + initialX
       } else {
-        x = 0
+        x = initialX
       }
       y += triangleHeight
       isPrevPointingUp = !isPrevRowFirstPointingUp
       isPrevRowFirstPointingUp = !isPrevRowFirstPointingUp
       rowNum += 1
-
+      triangleIndex = 0
     } else {
       isPrevPointingUp = !isPrevPointingUp
       triangleIndex += 1
