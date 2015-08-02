@@ -1,92 +1,252 @@
+<!DOCTYPE html>
 <html>
 <head>
   <title>Tessellate</title>
-  <link href='//fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
+  <link href='//fonts.googleapis.com/css?family=Montserrat:400,700|Source+Code+Pro:500,700' rel='stylesheet' type='text/css'>
   <link rel='stylesheet' href='//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css'>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/styles/default.min.css">
 
   <style>
+    html {
+      box-sizing: border-box;
+    }
+    *, *:before, *:after {
+      box-sizing: inherit;
+    }
     html, body {
       margin: 0;
       padding: 0;
+      font-size: 0;
     }
-    body {
-      position: relative;
+    input, textarea {
+      border-radius: 3px;
+      border: 1px solid #ddd;
+      font-size: 22px;
+    }
+    input[type="number"] {
+      width: 80px;
+      text-align: center;
+    }
+    textarea {
+      width: 100%;
+      height: 10em;
+    }
+    .code {
+      font-family: 'Source Code Pro', monospace;
+      font-weight: 500;
+      white-space: pre;
+      word-wrap: break-word;
+    }
+    .center {
       font-family: 'Montserrat', sans-serif;
       font-size: 72px;
       font-weight: 700;
       color: #222;
-    }
-    .center-of-attention {
+
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+      -webkit-transform: translate(-50%, -50%);
       text-align: center;
     }
-    .this-is-it {
+    .tessellate-it {
       border: solid 10px #222;
       padding: 24px;
+      cursor: default;
     }
-    .this-is-it:hover {
+    .tessellate-it:hover {
       color: #fff;
       background-color: #222;
       border: solid 10px #fff;
     }
-    .but-buttons-below-it {
+    .buttons {
       margin-top: 140px;
     }
-    a, a:hover, a:visited {
+    a, a:visited {
+      cursor: pointer;
       color: #222;
+    }
+    a:hover {
+      color: #777
     }
     .stupid-adblock-fa-twitter:before {
       content: "\f099";
+    }
+    .playground {
+      margin-top: 390px;
+      font-size: 0;
+      background-color: rgba(255, 255, 255, 0.7);
+      width: 1200px;
+      display: none;
+    }
+    .playground-half {
+      font-size: 20px;
+      width: 50%;
+      display: inline-block;
+      vertical-align: middle;
+      text-align: left;
+      height: 400px;
+      padding: 1em;
+    }
+    .input-row {
+      margin-bottom: 0.75em;
     }
   </style>
 </head>
 <body>
 
-  <div class="center-of-attention">
-    <div class="this-is-it">TESSELLATE</div>
+  <div class="center">
+    <div class="tessellate-it">TESSELLATE</div>
   </div>
-  <div class="center-of-attention but-buttons-below-it">
+  <div class="center buttons">
     <a href="https://github.com/kevinwuhoo/tessellate"><i class="fa fa-github"></i></a>
     <a href="https://twitter.com/kevinwuhoo"><i class="fa stupid-adblock-fa-twitter"></i></a>
+    <a class="playground-open"><i class="fa fa-cog"></i></a>
+    <a class="download" download="tessellate.png"><i class="fa fa-arrow-circle-o-down"></i></a>
+  </div>
+  <div class="center playground">
+    <div class="playground-half">
+      <form>
+        <div class="input-row">
+          <label for="size">Size</label>
+          <input type="number" id="size" min=1 step=1 data-bind="textInput: _size">
+          &nbsp;&nbsp;&nbsp;&nbsp;
+          <input type="checkbox" id="random-start" data-bind="checked: randomStart">
+          <label for="random-start">Random Start</label>
+        </div>
+
+        <div class="input-row">
+          <input type="radio" value="colors" id="colors" data-bind="checked: coloringMethod">
+          <label for="colors">Colors</label>
+          &nbsp;&nbsp;&nbsp;&nbsp;
+          <input type="radio" value="coloringFunction" id="coloring-function" data-bind="checked: coloringMethod">
+          <label for="coloring-function">Coloring Function</label>
+        </div>
+        <textarea data-bind="textInput: _colors, visible: coloringMethod() === 'colors'" class="code"></textarea>
+        <textarea data-bind="textInput: _coloringFunction, visible: coloringMethod() === 'coloringFunction'" class="code"></textarea>
+      </form>
+    </div>
+    <div class="playground-half">
+      <pre class="code">
+        <code class="tessellateSnippet javascript">
+        </code>
+      </pre>
+    </div>
   </div>
 
   <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
-  <script src="//cdn.rawgit.com/kevinwuhoo/tessellate/master/tessellate.js"></script>
-  <script>
-    var intervalId = null
-    var colors = ["#b3e2cd","#fdcdac","#cbd5e8","#f4cae4","#e6f5c9","#fff2ae","#f1e2cc"]
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
+  <script src="//cdn.rawgit.com/beautify-web/js-beautify/master/js/lib/beautify.js"></script>
+  <script src="//rawgit.com/kevinwuhoo/tessellate/master/tessellate.js"></script>
 
-    var appendTessellatedCanvas = function() {
-      canvas = tessellate({
-        size: 60,
-        colors: colors,
-        disableRandomStart: true
-      })
+  <script>
+    var tessellatedModel = null
+
+    var tessellateCanvas = function() {
+      $('canvas').remove()
+      canvas = tessellate(ko.toJS(tessellatedModel))
       document.body.appendChild(canvas)
     }
 
-    $('.this-is-it').hover(
-      // mouseenter
-      function() {
-        intervalId = setInterval(function() {
-          appendTessellatedCanvas()
-          if($('canvas').length === 2)
-            $('canvas').eq(0).remove()
-        }, 50)
-
-      // mouseleave
-      }, function() {
-        clearInterval(intervalId)
+    var updateCodeSnippet = function() {
+      var code = 'tessellate({'
+      code += 'size:'
+      code += tessellatedModel.size()
+      code += ','
+      code += 'randomStart:'
+      code += tessellatedModel.randomStart()
+      code += ','
+      if(tessellatedModel.coloringMethod() === "colors") {
+        code += 'colors:['
+        code += tessellatedModel.colors().map(function (c) { return '"' + c + '"'})
+        code += ']'
+      } else if (tessellatedModel.coloringMethod() === "coloringFunction") {
+        code += 'coloringFunction:'
+        code += tessellatedModel.coloringFunction()
       }
-    )
-    $(document).ready(appendTessellatedCanvas)
-    $(window).resize(function() {
-      $('canvas').remove()
-      appendTessellatedCanvas()
+      code += '})'
+
+      code = js_beautify(code)
+      $('.tessellateSnippet').html(code)
+      $('pre code').each(function(i, block) {
+        hljs.highlightBlock(block)
+      })
+    }
+
+    $(document).ready(function() {
+      tessellatedModel = new function() {
+        // this is a gross pattern, why can't ko look at input type?
+        this._size = ko.observable(40)
+        this.size = ko.pureComputed(function() {
+          return parseInt(this._size(), 10)
+        }, this)
+        this.randomStart = ko.observable(true)
+
+        this.coloringMethod = ko.observable("colors")
+        this._colors = ko.observable(
+          ["#b3e2cd", "#fdcdac", "#cbd5e8", "#f4cae4",
+           "#e6f5c9", "#fff2ae", "#f1e2cc"].join('\n')
+        )
+        this.colors = ko.pureComputed(function() {
+          return this._colors().split('\n').map(function(c) { return c.trim() })
+        }, this)
+
+        this._coloringFunction = ko.observable("function(row, index) {\n  if(index % 2 === 0)\n    return '#00cb8d';\n  else\n    return '#fff';\n}")
+
+        // return null if colors are selected since colors are ignored otherwise
+        this.coloringFunction = ko.computed(function() {
+          if(this.coloringMethod() === "colors") {
+            return null
+          } else {
+            eval('var func = '+ this._coloringFunction())
+            return func
+          }
+        }, this)
+      }()
+
+      ko.applyBindings(tessellatedModel)
+      tessellateCanvas()
+      updateCodeSnippet()
+
+      // http://stackoverflow.com/a/27019603/4677484
+      ko.computed(function() {
+        return ko.toJSON(tessellatedModel)
+      }).subscribe(function() {
+        tessellateCanvas()
+        updateCodeSnippet()
+      })
     })
+
+    $(window).resize(function() {
+      tessellateCanvas()
+    })
+
+    // "tessellate" box hover re-render
+    var intervalId = null
+    $('.tessellate-it').hover(function() {
+      intervalId = setInterval(function() { tessellateCanvas() }, 0)
+    }, function() {
+      clearInterval(intervalId)
+    })
+
+    // serialize canvas to allow download
+    $('.download').click(function() {
+      var data = canvas.toDataURL('image/png')
+                       .replace(/^data:image\/[^;]*/, 'data:application/octet-stream')
+      $(this).attr('href', data)
+    })
+
+    $('.playground-open').click(function() {
+      $('.center').animate({
+        top: '15%'
+      }, 'slow').promise().done(function(){
+        $('.playground').fadeIn('slow')
+      })
+    })
+
+    hljs.initHighlightingOnLoad()
   </script>
 </body>
 </html>
