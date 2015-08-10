@@ -138,6 +138,7 @@
   <script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.7/highlight.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/chroma-js/1.1.1/chroma.min.js"></script>
   <script src="//cdn.rawgit.com/beautify-web/js-beautify/master/js/lib/beautify.js"></script>
   <script src="//rawgit.com/kevinwuhoo/tessellate/master/tessellate.js"></script>
 
@@ -193,14 +194,15 @@
           return this._colors().split('\n').map(function(c) { return c.trim() })
         }, this)
 
-        this._coloringFunction = ko.observable("function(row, index) {\n  if(index % 2 === 0)\n    return '#00cb8d';\n  else\n    return '#fff';\n}")
+        this._coloringFunction = ko.observable("// chroma.js is included\n// choice is a convenience function for\n// getting a random element from an array\nfunction(row, index) {\n  if(index % 2 === row % 2)\n    return choice(chroma.scale('BuPu').padding([0.1, 0.4]).colors(5));\n  else\n    return '#fff';\n}")
 
         // return null if colors are selected since colors are ignored otherwise
         this.coloringFunction = ko.computed(function() {
           if(this.coloringMethod() === "colors") {
             return null
           } else {
-            eval('var func = '+ this._coloringFunction())
+            var choice = function(a) {return  a[Math.floor(Math.random() * a.length)] }
+            eval('var func = ' + this._coloringFunction())
             return func
           }
         }, this)
@@ -213,9 +215,13 @@
       // http://stackoverflow.com/a/27019603/4677484
       ko.computed(function() {
         return ko.toJSON(tessellatedModel)
-      }).subscribe(function() {
-        tessellateCanvas()
-        updateCodeSnippet()
+      }).extend({notify: 'always'}).subscribe(function() {
+        try {
+          tessellateCanvas()
+          updateCodeSnippet()
+        } catch (e) {
+          console.log(e)
+        }
       })
     })
 
